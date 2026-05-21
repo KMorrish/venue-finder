@@ -256,20 +256,33 @@
 
     const m = L.marker([v.lat, v.lng], { icon });
 
+    const conditionColor = v.conditions === 0 ? "#059669" : v.conditions <= 2 ? "#d97706" : "#dc2626";
     m.bindPopup(`
       <div class="popup-name">${v.name}</div>
       <span class="badge badge-${v.type}">${v.type === "Both" ? "Gambling + Liquor" : v.type + " Licence"}</span>
       <div class="popup-grid">
         <span class="popup-label">Address</span>
         <span class="popup-value">${v.street}, ${v.suburb}</span>
-        <span class="popup-label">Licence</span>
+        <span class="popup-label">Operator</span>
+        <span class="popup-value">${v.operator}</span>
+        <span class="popup-label">Phone</span>
+        <span class="popup-value">${v.phone}</span>
+        <span class="popup-label">Trading hours</span>
+        <span class="popup-value">${v.trading_hours}</span>
+        <span class="popup-label">Licence no.</span>
         <span class="popup-value">${v.licence}</span>
         <span class="popup-label">Status</span>
         <span class="popup-value">${v.status}</span>
+        <span class="popup-label">Conditions</span>
+        <span class="popup-value" style="color:${conditionColor};font-weight:700">${v.conditions} condition${v.conditions !== 1 ? "s" : ""}</span>
+        <span class="popup-label">Last inspection</span>
+        <span class="popup-value">${v.last_inspection}</span>
+        <span class="popup-label">Inspector</span>
+        <span class="popup-value">${v.inspector}</span>
         <span class="popup-label">Zone</span>
         <span class="popup-value">${v.zone}</span>
       </div>
-    `, { maxWidth: 260 });
+    `, { maxWidth: 280 });
 
     return m;
   }
@@ -322,12 +335,14 @@
     document.getElementById("result-count").textContent =
       `${count} venue${count !== 1 ? "s" : ""} shown`;
 
-    if (suburb !== "all" && matched.length > 0) {
+    const shouldZoom = (suburb !== "all") || (q.length >= 3 && count > 0 && count < allVenues.length);
+    if (shouldZoom && matched.length > 0) {
       const lats = matched.map(v => v.lat);
       const lngs = matched.map(v => v.lng);
+      const pad = matched.length === 1 ? 0.05 : 0.01;
       const bounds = L.latLngBounds(
-        [Math.min(...lats) - 0.01, Math.min(...lngs) - 0.01],
-        [Math.max(...lats) + 0.01, Math.max(...lngs) + 0.01]
+        [Math.min(...lats) - pad, Math.min(...lngs) - pad],
+        [Math.max(...lats) + pad, Math.max(...lngs) + pad]
       );
       map.fitBounds(bounds, { padding: [40, 40] });
     }
