@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Victoria Licensed Venue Finder</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f4f6;
+      color: #1a1a2e;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    header .logo {
+      width: 32px; height: 32px;
+      background: #4f8ef7;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    header h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.01em; }
+    header p { font-size: 12px; color: #9ca3af; margin-top: 1px; }
+
+    #demo-banner {
+      background: #fef3c7;
+      border-bottom: 1px solid #fcd34d;
+      padding: 7px 20px;
+      font-size: 12px;
+      color: #92400e;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    #toolbar {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    #toolbar input, #toolbar select {
+      height: 36px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 0 12px;
+      font-size: 13px;
+      color: #1a1a2e;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    #toolbar input { flex: 1; min-width: 180px; }
+    #toolbar select { min-width: 150px; }
+    #toolbar input:focus, #toolbar select:focus { border-color: #4f8ef7; }
+
+    #toolbar input::placeholder { color: #9ca3af; }
+
+    #status {
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 6px 16px;
+      font-size: 12px;
+      color: #6b7280;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    #status .hint { font-style: italic; }
+
+    #map { flex: 1; }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .leaflet-popup-content { margin: 14px 16px; }
+
+    .popup-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #1a1a2e;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-Gambling { background: #ede9fe; color: #5b21b6; }
+    .badge-Liquor   { background: #fee2e2; color: #991b1b; }
+    .badge-Both     { background: #d1fae5; color: #065f46; }
+
+    .popup-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 10px;
+      font-size: 12px;
+    }
+
+    .popup-label { color: #9ca3af; white-space: nowrap; }
+    .popup-value { color: #374151; font-weight: 500; }
+
+    .legend {
+      background: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      font-size: 12px;
+      line-height: 1.9;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1.5px currentColor;
+      flex-shrink: 0;
+    }
+
+    #clear-btn {
+      height: 36px;
+      padding: 0 14px;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #374151;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #clear-btn:hover { background: #e5e7eb; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📍</div>
+  <div>
+    <h1>Victoria Licensed Venue Finder</h1>
+    <p>Gambling &amp; Liquor Venues — Inspector Planning Tool</p>
+  </div>
+</header>
+
+<div id="demo-banner">
+  ⚠️ Demo version — sample data only. Live version connects to the venues database.
+</div>
+
+<div id="toolbar">
+  <input type="text" id="search" placeholder="Search venue name, suburb or street…" />
+  <select id="type-filter">
+    <option value="all">All venue types</option>
+    <option value="Gambling">Gambling only</option>
+    <option value="Liquor">Liquor only</option>
+    <option value="Both">Both licences</option>
+  </select>
+  <select id="zone-filter">
+    <option value="all">All zones</option>
+  </select>
+  <select id="suburb-filter">
+    <option value="all">All suburbs</option>
+  </select>
+  <button id="clear-btn">Clear filters</button>
+</div>
+
+<div id="status">
+  <span id="result-count">Loading venues…</span>
+  <span class="hint">Zoom in to expand clusters into individual venues</span>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+  const colors = {
+    Gambling: { fill: "#7c3aed" },
+    Liquor:   { fill: "#dc2626" },
+    Both:     { fill: "#059669" }
+  };
+
+  const map = L.map("map").setView([-37.2, 144.5], 7);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  const clusterGroup = L.markerClusterGroup({
+    maxClusterRadius: 55,
+    showCoverageOnHover: false,
+    iconCreateFunction: cluster => {
+      const count = cluster.getChildCount();
+      const size = count < 10 ? 34 : count < 50 ? 40 : 48;
+      return L.divIcon({
+        html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#1a1a2e;color:#fff;display:flex;align-items:center;justify-content:center;font-size:${size < 40 ? 12 : 14}px;font-weight:700;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.25)">${count}</div>`,
+        className: "",
+        iconSize: [size, size],
+        iconAnchor: [size/2, size/2]
+      });
+    }
+  });
+
+  map.addLayer(clusterGroup);
+
+  function makeMarker(v) {
+    const c = colors[v.type] || colors.Both;
+    const icon = L.divIcon({
+      className: "",
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${c.fill};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35)"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+
+    const m = L.marker([v.lat, v.lng], { icon });
+
+    m.bindPopup(`
+      <div class="popup-name">${v.name}</div>
+      <span class="badge badge-${v.type}">${v.type === "Both" ? "Gambling + Liquor" : v.type + " Licence"}</span>
+      <div class="popup-grid">
+        <span class="popup-label">Address</span>
+        <span class="popup-value">${v.street}, ${v.suburb}</span>
+        <span class="popup-label">Licence</span>
+        <span class="popup-value">${v.licence}</span>
+        <span class="popup-label">Status</span>
+        <span class="popup-value">${v.status}</span>
+        <span class="popup-label">Zone</span>
+        <span class="popup-value">${v.zone}</span>
+      </div>
+    `, { maxWidth: 260 });
+
+    return m;
+  }
+
+  let allVenues = [];
+
+  function populateFilters(venues) {
+    const zones   = [...new Set(venues.map(v => v.zone))].sort();
+    const suburbs = [...new Set(venues.map(v => v.suburb))].sort();
+
+    const zoneSel   = document.getElementById("zone-filter");
+    const suburbSel = document.getElementById("suburb-filter");
+
+    zones.forEach(z => {
+      const o = document.createElement("option");
+      o.value = z; o.textContent = z;
+      zoneSel.appendChild(o);
+    });
+
+    suburbs.forEach(s => {
+      const o = document.createElement("option");
+      o.value = s; o.textContent = s;
+      suburbSel.appendChild(o);
+    });
+  }
+
+  function render() {
+    const q      = document.getElementById("search").value.toLowerCase().trim();
+    const type   = document.getElementById("type-filter").value;
+    const zone   = document.getElementById("zone-filter").value;
+    const suburb = document.getElementById("suburb-filter").value;
+
+    clusterGroup.clearLayers();
+    let matched = [];
+
+    allVenues.forEach(v => {
+      const mQ = !q || v.name.toLowerCase().includes(q) || v.suburb.toLowerCase().includes(q) || v.street.toLowerCase().includes(q);
+      const mT = type   === "all" || v.type   === type;
+      const mZ = zone   === "all" || v.zone   === zone;
+      const mS = suburb === "all" || v.suburb === suburb;
+
+      if (mQ && mT && mZ && mS) {
+        clusterGroup.addLayer(makeMarker(v));
+        matched.push(v);
+      }
+    });
+
+    document.getElementById("result-count").textContent =
+      `${matched.length} venue${matched.length !== 1 ? "s" : ""} shown`;
+
+    const matchedSuburbs = [...new Set(matched.map(v => v.suburb))];
+    const shouldZoom = matched.length > 0 && (suburb !== "all" || (q && matchedSuburbs.length === 1));
+
+    if (shouldZoom) {
+      const lats = matched.map(v => v.lat);
+      const lngs = matched.map(v => v.lng);
+      const bounds = L.latLngBounds(
+        [Math.min(...lats) - 0.01, Math.min(...lngs) - 0.01],
+        [Math.max(...lats) + 0.01, Math.max(...lngs) + 0.01]
+      );
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  }
+
+  document.getElementById("search").addEventListener("input", render);
+  document.getElementById("type-filter").addEventListener("change", render);
+  document.getElementById("zone-filter").addEventListener("change", render);
+  document.getElementById("suburb-filter").addEventListener("change", render);
+
+  document.getElementById("clear-btn").addEventListener("click", () => {
+    document.getElementById("search").value = "";
+    document.getElementById("type-filter").value = "all";
+    document.getElementById("zone-filter").value = "all";
+    document.getElementById("suburb-filter").value = "all";
+    map.setView([-37.2, 144.5], 7);
+    render();
+  });
+
+  const legend = L.control({ position: "bottomright" });
+  legend.onAdd = () => {
+    const d = L.DomUtil.create("div", "legend");
+    d.innerHTML = Object.entries({
+      Gambling: "#7c3aed",
+      Liquor:   "#dc2626",
+      Both:     "#059669"
+    }).map(([label, color]) => `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:${color};box-shadow:0 0 0 1.5px ${color}"></div>
+        ${label}
+      </div>
+    `).join("");
+    return d;
+  };
+  legend.addTo(map);
+
+  fetch("venues.geojson")
+    .then(r => r.json())
+    .then(geojson => {
+      allVenues = geojson.features.map(f => ({
+        ...f.properties,
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0]
+      }));
+      populateFilters(allVenues);
+      render();
+    })
+    .catch(err => {
+      document.getElementById("result-count").textContent = "Error loading venue data.";
+      console.error(err);
+    });
+</script>
+</body>
+</html>
