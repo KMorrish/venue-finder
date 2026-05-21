@@ -335,7 +335,7 @@
     document.getElementById("result-count").textContent =
       `${count} venue${count !== 1 ? "s" : ""} shown`;
 
-    const shouldZoom = (suburb !== "all") || (q.length >= 3 && count > 0 && count < allVenues.length);
+    const shouldZoom = (suburb !== "all") || (q.length >= 2 && count > 0 && count < allVenues.length);
     if (shouldZoom && matched.length > 0) {
       const lats = matched.map(v => v.lat);
       const lngs = matched.map(v => v.lng);
@@ -344,11 +344,12 @@
         [Math.min(...lats) - pad, Math.min(...lngs) - pad],
         [Math.max(...lats) + pad, Math.max(...lngs) + pad]
       );
-      map.fitBounds(bounds, { padding: [40, 40] });
+      setTimeout(() => map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 }), 150);
     }
   }
 
   document.getElementById("search").addEventListener("input", render);
+  document.getElementById("search").addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); render(); } });
   document.getElementById("type-filter").addEventListener("change", render);
   document.getElementById("zone-filter").addEventListener("change", render);
   document.getElementById("suburb-filter").addEventListener("change", render);
